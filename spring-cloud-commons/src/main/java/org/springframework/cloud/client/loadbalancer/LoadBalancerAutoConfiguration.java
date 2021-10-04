@@ -50,10 +50,11 @@ import org.springframework.web.client.RestTemplate;
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(RestTemplate.class)
-@ConditionalOnBean(LoadBalancerClient.class)
+@ConditionalOnBean(LoadBalancerClient.class) // 4. LoadBalancerClient在spring-cloud-netflix的RibbonAutoConfiguration被初始化
 @EnableConfigurationProperties(LoadBalancerProperties.class)
 public class LoadBalancerAutoConfiguration {
 
+	// 1. 收集应用中所有被@LoadBalanced注解修饰的RestTemplate, 使用LoadBalancerClient代理请求行为
 	@LoadBalanced
 	@Autowired(required = false)
 	private List<RestTemplate> restTemplates = Collections.emptyList();
@@ -86,12 +87,14 @@ public class LoadBalancerAutoConfiguration {
 		@Bean
 		public LoadBalancerInterceptor loadBalancerInterceptor(LoadBalancerClient loadBalancerClient,
 				LoadBalancerRequestFactory requestFactory) {
+			// 2. 初始化拦截器, 通过LoadBalancerClient代理RestTemplate的行为
 			return new LoadBalancerInterceptor(loadBalancerClient, requestFactory);
 		}
 
 		@Bean
 		@ConditionalOnMissingBean
 		public RestTemplateCustomizer restTemplateCustomizer(final LoadBalancerInterceptor loadBalancerInterceptor) {
+			// 3. 将拦截器注入RestTemplate中
 			return restTemplate -> {
 				List<ClientHttpRequestInterceptor> list = new ArrayList<>(restTemplate.getInterceptors());
 				list.add(loadBalancerInterceptor);
