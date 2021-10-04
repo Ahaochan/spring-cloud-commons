@@ -50,9 +50,12 @@ public class LoadBalancerInterceptor implements ClientHttpRequestInterceptor {
 	@Override
 	public ClientHttpResponse intercept(final HttpRequest request, final byte[] body,
 			final ClientHttpRequestExecution execution) throws IOException {
+		// 1. 假设进来一个请求 http://serviceA/hello
 		final URI originalUri = request.getURI();
+		// 2. 获取服务名 serviceA
 		String serviceName = originalUri.getHost();
 		Assert.state(serviceName != null, "Request URI does not contain a valid hostname: " + originalUri);
+		// 3. 通过LoadBalancerClient代理RestTemplate的行为
 		return this.loadBalancer.execute(serviceName, this.requestFactory.createRequest(request, body, execution));
 	}
 
