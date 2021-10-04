@@ -102,6 +102,7 @@ public abstract class NamedContextFactory<C extends NamedContextFactory.Specific
 		if (!this.contexts.containsKey(name)) {
 			synchronized (this.contexts) {
 				if (!this.contexts.containsKey(name)) {
+					// 双重锁, 没有则创建spring上下文
 					this.contexts.put(name, createContext(name));
 				}
 			}
@@ -111,11 +112,13 @@ public abstract class NamedContextFactory<C extends NamedContextFactory.Specific
 
 	protected AnnotationConfigApplicationContext createContext(String name) {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+		// 1. 如果有特殊的配置, 就给这个上下文注册配置
 		if (this.configurations.containsKey(name)) {
 			for (Class<?> configuration : this.configurations.get(name).getConfiguration()) {
 				context.register(configuration);
 			}
 		}
+		// 2. 如果有默认配置, 也注册到上下文中
 		for (Map.Entry<String, C> entry : this.configurations.entrySet()) {
 			if (entry.getKey().startsWith("default.")) {
 				for (Class<?> configuration : entry.getValue().getConfiguration()) {
@@ -123,7 +126,9 @@ public abstract class NamedContextFactory<C extends NamedContextFactory.Specific
 				}
 			}
 		}
+		// 3. 注册默认配置类, 比如Ribbon会注册RibbonClientConfiguration
 		context.register(PropertyPlaceholderAutoConfiguration.class, this.defaultConfigType);
+		// 4. 注册其他配置
 		context.getEnvironment().getPropertySources().addFirst(new MapPropertySource(this.propertySourceName,
 				Collections.<String, Object>singletonMap(this.propertyName, name)));
 		if (this.parent != null) {
@@ -134,6 +139,7 @@ public abstract class NamedContextFactory<C extends NamedContextFactory.Specific
 			context.setClassLoader(this.parent.getClassLoader());
 		}
 		context.setDisplayName(generateDisplayName(name));
+		// 5. 加载spring上下文中的bean, 进行初始化
 		context.refresh();
 		return context;
 	}
@@ -143,8 +149,10 @@ public abstract class NamedContextFactory<C extends NamedContextFactory.Specific
 	}
 
 	public <T> T getInstance(String name, Class<T> type) {
+		// 根据name获取spring上下文, 如果没有则创建
 		AnnotationConfigApplicationContext context = getContext(name);
 		try {
+			// 从当前name指定的spring上下文获取类型为type的bean实例
 			return context.getBean(type);
 		}
 		catch (NoSuchBeanDefinitionException e) {
