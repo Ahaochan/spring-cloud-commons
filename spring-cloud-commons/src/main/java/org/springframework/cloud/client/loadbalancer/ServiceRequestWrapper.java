@@ -39,6 +39,8 @@ public class ServiceRequestWrapper extends HttpRequestWrapper {
 
 	@Override
 	public URI getURI() {
+		// 重写了getURI方法, 不再是服务名serviceA
+		// 而是从负载均衡算法获取到的实例中, 获取真正的ip端口地址
 		URI uri = this.loadBalancer.reconstructURI(this.instance, getRequest().getURI());
 		return uri;
 	}

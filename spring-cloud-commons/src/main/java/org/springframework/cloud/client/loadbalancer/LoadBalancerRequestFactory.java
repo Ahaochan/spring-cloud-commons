@@ -48,6 +48,7 @@ public class LoadBalancerRequestFactory {
 
 	public LoadBalancerRequest<ClientHttpResponse> createRequest(final HttpRequest request, final byte[] body,
 			final ClientHttpRequestExecution execution) {
+		// 拿到实例信息后, 真正发起http请求的代码
 		return instance -> {
 			HttpRequest serviceRequest = new ServiceRequestWrapper(request, instance, this.loadBalancer);
 			if (this.transformers != null) {
@@ -55,6 +56,7 @@ public class LoadBalancerRequestFactory {
 					serviceRequest = transformer.transformRequest(serviceRequest, instance);
 				}
 			}
+			// 将请求交给spring web的代码去执行
 			return execution.execute(serviceRequest, body);
 		};
 	}
