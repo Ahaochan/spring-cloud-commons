@@ -159,6 +159,7 @@ public class RetryLoadBalancerInterceptor implements ClientHttpRequestIntercepto
 		if (retryListeners != null && retryListeners.length != 0) {
 			template.setListeners(retryListeners);
 		}
+		// spring.cloud.loadbalancer.retry.enabled配置
 		template.setRetryPolicy(!properties.getRetry().isEnabled() || retryPolicy == null ? new NeverRetryPolicy()
 				: new InterceptorRetryPolicy(request, retryPolicy, loadBalancer, serviceName));
 		return template;
