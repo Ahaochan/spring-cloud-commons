@@ -110,6 +110,7 @@ public class LoadBalancerAutoConfiguration {
 			super(ConfigurationPhase.REGISTER_BEAN);
 		}
 
+		// 需要引入spring retry依赖
 		@ConditionalOnMissingClass("org.springframework.retry.support.RetryTemplate")
 		static class RetryTemplateMissing {
 
@@ -126,6 +127,7 @@ public class LoadBalancerAutoConfiguration {
 	 * Auto configuration for retry mechanism.
 	 */
 	@Configuration(proxyBeanMethods = false)
+	// 需要引入spring retry依赖
 	@ConditionalOnClass(RetryTemplate.class)
 	public static class RetryAutoConfiguration {
 
@@ -142,6 +144,7 @@ public class LoadBalancerAutoConfiguration {
 	 * Auto configuration for retry intercepting mechanism.
 	 */
 	@Configuration(proxyBeanMethods = false)
+	// 需要引入spring retry依赖
 	@ConditionalOnClass(RetryTemplate.class)
 	@ConditionalOnBean(ReactiveLoadBalancer.Factory.class)
 	@ConditionalOnProperty(value = "spring.cloud.loadbalancer.retry.enabled", matchIfMissing = true)
@@ -149,6 +152,7 @@ public class LoadBalancerAutoConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
+		// 需要引入spring retry依赖
 		public RetryLoadBalancerInterceptor loadBalancerInterceptor(LoadBalancerClient loadBalancerClient,
 				LoadBalancerProperties properties, LoadBalancerRequestFactory requestFactory,
 				LoadBalancedRetryFactory loadBalancedRetryFactory,

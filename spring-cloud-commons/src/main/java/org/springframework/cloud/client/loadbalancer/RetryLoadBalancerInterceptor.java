@@ -58,6 +58,7 @@ public class RetryLoadBalancerInterceptor implements ClientHttpRequestIntercepto
 
 	private final ReactiveLoadBalancer.Factory<ServiceInstance> loadBalancerFactory;
 
+	// 需要引入spring retry依赖
 	public RetryLoadBalancerInterceptor(LoadBalancerClient loadBalancer, LoadBalancerProperties properties,
 			LoadBalancerRequestFactory requestFactory, LoadBalancedRetryFactory lbRetryFactory,
 			ReactiveLoadBalancer.Factory<ServiceInstance> loadBalancerFactory) {
@@ -71,11 +72,15 @@ public class RetryLoadBalancerInterceptor implements ClientHttpRequestIntercepto
 	@Override
 	public ClientHttpResponse intercept(final HttpRequest request, final byte[] body,
 			final ClientHttpRequestExecution execution) throws IOException {
+		// 1. 假设进来一个请求 http://serviceA/hello
 		final URI originalUri = request.getURI();
+		// 2. 获取服务名 serviceA
 		final String serviceName = originalUri.getHost();
 		Assert.state(serviceName != null, "Request URI does not contain a valid hostname: " + originalUri);
+		// 默认空实现
 		final LoadBalancedRetryPolicy retryPolicy = lbRetryFactory.createRetryPolicy(serviceName, loadBalancer);
 		RetryTemplate template = createRetryTemplate(serviceName, request, retryPolicy);
+		// 通过RetryTemplate去实现通用的重试机制
 		return template.execute(context -> {
 			ServiceInstance serviceInstance = null;
 			if (context instanceof LoadBalancedRetryContext) {
@@ -126,6 +131,7 @@ public class RetryLoadBalancerInterceptor implements ClientHttpRequestIntercepto
 					requestFactory.createRequest(request, body, execution),
 					new RetryableRequestContext(null, new RequestData(request), hint));
 			ServiceInstance finalServiceInstance = serviceInstance;
+			// 3. 通过LoadBalancerClient代理RestTemplate的行为
 			ClientHttpResponse response = RetryLoadBalancerInterceptor.this.loadBalancer.execute(serviceName,
 					finalServiceInstance, lbRequest);
 			int statusCode = response.getRawStatusCode();
@@ -160,6 +166,7 @@ public class RetryLoadBalancerInterceptor implements ClientHttpRequestIntercepto
 			template.setListeners(retryListeners);
 		}
 		// spring.cloud.loadbalancer.retry.enabled配置
+		// retryPolicy是空实现
 		template.setRetryPolicy(!properties.getRetry().isEnabled() || retryPolicy == null ? new NeverRetryPolicy()
 				: new InterceptorRetryPolicy(request, retryPolicy, loadBalancer, serviceName));
 		return template;
